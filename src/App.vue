@@ -566,7 +566,7 @@ html, body {
 }
 
 .dir-btn:active {
-  transform: scale(0.95);
+  transform: scale(0.8);
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
@@ -586,6 +586,7 @@ html, body {
   border-radius: 10px;
   box-shadow: 0 5px 15px rgba(0,0,0,0.3);
   max-height: 95%; /* 确保不会溢出 */
+  transform: none !important; /* 禁止缩放 */
 }
 
 .board {
@@ -630,6 +631,7 @@ html, body {
   justify-content: space-between; /* 改变为两端对齐 */
   align-items: center;
   padding: min(15px, 2vw);
+  transform: none !important; /* 禁止缩放 */
 }
 
 .next-shape-container {
@@ -900,7 +902,7 @@ html, body {
   }
   
   .left-controls, .right-controls {
-    width: 30%;
+    width: 20%;
   }
 }
 
@@ -948,6 +950,56 @@ html, body {
   .board {
     aspect-ratio: 1/1.8; /* 稍微调整宽高比 */
     max-height: 70vh;
+  }
+}
+
+/* 针对 iPad Air 2 横屏模式的左侧控制区优化 */
+@media only screen 
+  and (min-device-width: 2048px) 
+  and (max-device-width: 2048px) 
+  and (min-device-height: 1536px) 
+  and (max-device-height: 1536px) 
+  and (orientation: landscape) 
+  and (-webkit-min-device-pixel-ratio: 2) {
+  
+  .left-controls {
+    width: 20%; /* 缩小左侧控制区宽度 */
+    transform: scale(0.8); /* 整体缩放 */
+    transform-origin: left center; /* 从左侧中心缩放 */
+  }
+
+  .direction-pad {
+    width: 70%; /* 调整方向键区域大小 */
+    height: 70%;
+    gap: 10px; /* 减小按钮间距 */
+  }
+
+  .dir-btn {
+    font-size: 30px; /* 调整按钮字体大小 */
+  }
+}
+
+/* 通用 iPad 横屏模式左侧控制区优化 */
+@media only screen 
+  and (min-device-width: 768px) 
+  and (max-device-width: 1024px) 
+  and (orientation: landscape) 
+  and (-webkit-min-device-pixel-ratio: 2) {
+  
+  .left-controls {
+    width: 20%;
+    transform: scale(0.6);
+    transform-origin: left center;
+  }
+
+  .direction-pad {
+    width: 85%;
+    height: 85%;
+    gap: 12px;
+  }
+
+  .dir-btn {
+    font-size: 36px;
   }
 }
 </style>
