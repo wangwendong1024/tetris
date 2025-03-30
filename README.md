@@ -99,9 +99,9 @@ See [Configuration Reference](https://cli.vuejs.org/config/).
 MIT License
 
 ## 反馈与建议
-如果您在使用过程中遇到任何问题或有改进建议，请通过以下方式联系我们：
-- Email: your-email@example.com
-- GitHub Issues: [提交问题](https://github.com/your-repo/issues)
+如果您在使用过程中遇到任何问题或有改进建议，请通过以下方式联系我：
+- Email: wangwendong1024@gmail.com
+- GitHub Issues: [提交问题](https://github.com/wangwendong1024/tetris/issues)
 
 ## 支持与鼓励
 
