@@ -420,6 +420,11 @@ export default {
     onMounted(() => {
       startGame();
       window.addEventListener('keydown', handleKeydown);
+      // 阻止双击缩放
+      document.addEventListener('dblclick', preventZoom, { passive: false });
+      // 阻止多点触控缩放
+      document.addEventListener('touchstart', preventZoom, { passive: false });
+      document.addEventListener('touchmove', preventZoom, { passive: false });
     });
 
     onUnmounted(() => {
@@ -427,7 +432,17 @@ export default {
         clearInterval(gameInterval);
       }
       window.removeEventListener('keydown', handleKeydown);
+      // 移除事件监听器
+      document.removeEventListener('dblclick', preventZoom);
+      document.removeEventListener('touchstart', preventZoom);
+      document.removeEventListener('touchmove', preventZoom);
     });
+
+    const preventZoom = (event) => {
+      if (event.touches && event.touches.length > 1) {
+        event.preventDefault();
+      }
+    }
 
     return {
       board,
@@ -456,10 +471,21 @@ html, body {
   width: 100%;
   height: 100%;
   box-sizing: border-box;
+  touch-action: manipulation;
 }
 
 *, *:before, *:after {
   box-sizing: inherit;
+}
+
+/* 禁用长按菜单 */
+* {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently supported by Chrome and Opera */
 }
 
 .tetris {
@@ -792,11 +818,9 @@ html, body {
   }
 }
 
-/* 禁用长按菜单 */
-* {
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
+/* 禁用双击缩放 */
+html, body {
+  touch-action: manipulation;
 }
 
 /* 添加这个专门针对华为折叠屏设备的媒体查询 */
