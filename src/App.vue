@@ -25,7 +25,8 @@
             <div v-for="(cell, colIndex) in row"
                  :key="colIndex"
                  class="cell"
-                 :class="{ filled: cell }">
+                 :class="{ filled: cell !== false }"
+                 :style="cell !== false ? { backgroundColor: cell } : {}">
             </div>
           </div>
         </div>
@@ -42,7 +43,8 @@
               <div v-for="(cell, colIndex) in row"
                    :key="colIndex"
                    class="cell"
-                   :class="{ filled: cell }">
+                   :class="{ filled: cell !== false }"
+                   :style="cell !== false ? { backgroundColor: cell } : {}">
               </div>
             </div>
           </div>
@@ -80,75 +82,108 @@ export default {
 
     // 非响应式状态
     let currentShape = null;
+    let currentShapeColor = null;
     let shapePosition = { x: 0, y: 0 };
     let gameInterval = null;
 
+    // 为每种形状定义颜色（深色系）
+    const shapeColors = {
+      I: '#00796B', // 深绿松石色
+      O: '#FFA000', // 深琥珀色
+      T: '#7B1FA2', // 深紫色
+      Z: '#C62828', // 深红色
+      S: '#2E7D32', // 深绿色
+      L: '#E65100', // 深橙色
+      J: '#0D47A1'  // 深蓝色
+    };
+
     const shapes = [
       // I shape
-      [
-        [false, false, false, false],
-        [true, true, true, true],
-        [false, false, false, false],
-        [false, false, false, false],
-      ],
+      {
+        type: 'I',
+        cells: [
+          [false, false, false, false],
+          [true, true, true, true],
+          [false, false, false, false],
+          [false, false, false, false],
+        ]
+      },
       // O shape
-      [
-        [false, false, false, false],
-        [false, true, true, false],
-        [false, true, true, false],
-        [false, false, false, false],
-      ],
+      {
+        type: 'O',
+        cells: [
+          [false, false, false, false],
+          [false, true, true, false],
+          [false, true, true, false],
+          [false, false, false, false],
+        ]
+      },
       // T shape
-      [
-        [false, false, false, false],
-        [false, true, true, true],
-        [false, false, true, false],
-        [false, false, false, false],
-      ],
+      {
+        type: 'T',
+        cells: [
+          [false, false, false, false],
+          [false, true, true, true],
+          [false, false, true, false],
+          [false, false, false, false],
+        ]
+      },
       // Z shape
-      [
-        [false, false, false, false],
-        [true, true, false, false],
-        [false, true, true, false],
-        [false, false, false, false],
-      ],
+      {
+        type: 'Z',
+        cells: [
+          [false, false, false, false],
+          [true, true, false, false],
+          [false, true, true, false],
+          [false, false, false, false],
+        ]
+      },
       // S shape (Z shape的镜像)
-      [
-        [false, false, false, false],
-        [false, true, true, false],
-        [true, true, false, false],
-        [false, false, false, false],
-      ],
+      {
+        type: 'S',
+        cells: [
+          [false, false, false, false],
+          [false, true, true, false],
+          [true, true, false, false],
+          [false, false, false, false],
+        ]
+      },
       // L shape
-      [
-        [false, false, false, false],
-        [true, true, true, false],
-        [true, false, false, false],
-        [false, false, false, false],
-      ],
+      {
+        type: 'L',
+        cells: [
+          [false, false, false, false],
+          [true, true, true, false],
+          [true, false, false, false],
+          [false, false, false, false],
+        ]
+      },
       // J shape (L shape的镜像)
-      [
-        [false, false, false, false],
-        [true, true, true, false],
-        [false, false, true, false],
-        [false, false, false, false],
-      ]
+      {
+        type: 'J',
+        cells: [
+          [false, false, false, false],
+          [true, true, true, false],
+          [false, false, true, false],
+          [false, false, false, false],
+        ]
+      }
     ];
 
     const randomShape = () => shapes[Math.floor(Math.random() * shapes.length)];
 
     const drawShape = (shape, x, y) => {
-      shape.forEach((row, rowIndex) => {
+      shape.cells.forEach((row, rowIndex) => {
         row.forEach((cell, colIndex) => {
           if (cell && isValidPosition(x + colIndex, y + rowIndex)) {
-            board.value[rowIndex + y][colIndex + x] = true;
+            board.value[rowIndex + y][colIndex + x] = currentShapeColor;
           }
         });
       });
     };
 
     const clearShape = (shape, x, y) => {
-      shape.forEach((row, rowIndex) => {
+      shape.cells.forEach((row, rowIndex) => {
         row.forEach((cell, colIndex) => {
           if (cell && isValidPosition(x + colIndex, y + rowIndex)) {
             board.value[rowIndex + y][colIndex + x] = false;
@@ -194,10 +229,15 @@ export default {
     };
 
     const rotate = () => {
-      const rotatedShape = transpose(currentShape).map(row => row.reverse());
+      const rotatedCells = transpose(currentShape.cells).map(row => row.reverse());
+      const rotatedShape = {
+        type: currentShape.type,
+        cells: rotatedCells
+      };
+      
       if (canRotate(rotatedShape, shapePosition.x, shapePosition.y)) {
         clearShape(currentShape, shapePosition.x, shapePosition.y);
-        currentShape = rotatedShape;
+        currentShape.cells = rotatedCells;
         drawShape(currentShape, shapePosition.x, shapePosition.y);
       }
     };
@@ -207,9 +247,9 @@ export default {
     const isValidPosition = (x, y) => x >= 0 && x < boardWidth && y >= 0 && y < boardHeight;
 
     const canMoveLeft = (shape, x, y) => {
-      for (let rowIndex = 0; rowIndex < shape.length; rowIndex++) {
-        for (let colIndex = 0; colIndex < shape[rowIndex].length; colIndex++) {
-          if (shape[rowIndex][colIndex] && !isValidPosition(x + colIndex - 1, y + rowIndex)) {
+      for (let rowIndex = 0; rowIndex < shape.cells.length; rowIndex++) {
+        for (let colIndex = 0; colIndex < shape.cells[rowIndex].length; colIndex++) {
+          if (shape.cells[rowIndex][colIndex] && !isValidPosition(x + colIndex - 1, y + rowIndex)) {
             return false;
           }
         }
@@ -218,9 +258,9 @@ export default {
     };
 
     const canMoveRight = (shape, x, y) => {
-      for (let rowIndex = 0; rowIndex < shape.length; rowIndex++) {
-        for (let colIndex = 0; colIndex < shape[rowIndex].length; colIndex++) {
-          if (shape[rowIndex][colIndex] && !isValidPosition(x + colIndex + 1, y + rowIndex)) {
+      for (let rowIndex = 0; rowIndex < shape.cells.length; rowIndex++) {
+        for (let colIndex = 0; colIndex < shape.cells[rowIndex].length; colIndex++) {
+          if (shape.cells[rowIndex][colIndex] && !isValidPosition(x + colIndex + 1, y + rowIndex)) {
             return false;
           }
         }
@@ -230,9 +270,9 @@ export default {
 
     // eslint-disable-next-line no-unused-vars
     const canMoveDown = (shape, x, y) => {
-      for (let rowIndex = 0; rowIndex < shape.length; rowIndex++) {
-        for (let colIndex = 0; colIndex < shape[rowIndex].length; colIndex++) {
-          if (shape[rowIndex][colIndex] && !isValidPosition(x + colIndex, y + rowIndex + 1)) {
+      for (let rowIndex = 0; rowIndex < shape.cells.length; rowIndex++) {
+        for (let colIndex = 0; colIndex < shape.cells[rowIndex].length; colIndex++) {
+          if (shape.cells[rowIndex][colIndex] && !isValidPosition(x + colIndex, y + rowIndex + 1)) {
             return false;
           }
         }
@@ -241,9 +281,9 @@ export default {
     };
 
     const canRotate = (shape, x, y) => {
-      for (let rowIndex = 0; rowIndex < shape.length; rowIndex++) {
-        for (let colIndex = 0; colIndex < shape[rowIndex].length; colIndex++) {
-          if (shape[rowIndex][colIndex] && !isValidPosition(x + colIndex, y + rowIndex)) {
+      for (let rowIndex = 0; rowIndex < shape.cells.length; rowIndex++) {
+        for (let colIndex = 0; colIndex < shape.cells[rowIndex].length; colIndex++) {
+          if (shape.cells[rowIndex][colIndex] && !isValidPosition(x + colIndex, y + rowIndex)) {
             return false;
           }
         }
@@ -254,7 +294,7 @@ export default {
     const checkLines = () => {
       let linesCleared = 0;
       for (let y = boardHeight - 1; y >= 0; y--) {
-        if (board.value[y].every(cell => cell)) {
+        if (board.value[y].every(cell => cell !== false)) {
           board.value.splice(y, 1);
           board.value.unshift(Array(boardWidth).fill(false));
           linesCleared++;
@@ -282,9 +322,9 @@ export default {
     };
 
     const checkCollision = (shape, x, y) => {
-      for (let row = 0; row < shape.length; row++) {
-        for (let col = 0; col < shape[row].length; col++) {
-          if (shape[row][col]) {
+      for (let row = 0; row < shape.cells.length; row++) {
+        for (let col = 0; col < shape.cells[row].length; col++) {
+          if (shape.cells[row][col]) {
             const newX = x + col;
             const newY = y + row;
 
@@ -294,7 +334,7 @@ export default {
             }
 
             // 检查是否与其他方块重叠
-            if (newY >= 0 && board.value[newY][newX] &&
+            if (newY >= 0 && board.value[newY][newX] !== false &&
                 !isPartOfCurrentShape(newX, newY)) {
               return true;
             }
@@ -307,9 +347,9 @@ export default {
     const isPartOfCurrentShape = (x, y) => {
       if (!currentShape) return false;
 
-      for (let row = 0; row < currentShape.length; row++) {
-        for (let col = 0; col < currentShape[row].length; col++) {
-          if (currentShape[row][col] &&
+      for (let row = 0; row < currentShape.cells.length; row++) {
+        for (let col = 0; col < currentShape.cells[row].length; col++) {
+          if (currentShape.cells[row][col] &&
               shapePosition.x + col === x &&
               shapePosition.y + row === y) {
             return true;
@@ -332,10 +372,11 @@ export default {
 
     const updateNextShapePreview = () => {
       nextShapeBoard.value = Array.from({ length: 4 }, () => Array(4).fill(false));
-      nextShape.value.forEach((row, rowIndex) => {
+      const nextShapeColor = shapeColors[nextShape.value.type];
+      nextShape.value.cells.forEach((row, rowIndex) => {
         row.forEach((cell, colIndex) => {
           if (cell) {
-            nextShapeBoard.value[rowIndex][colIndex] = true;
+            nextShapeBoard.value[rowIndex][colIndex] = nextShapeColor;
           }
         });
       });
@@ -360,6 +401,7 @@ export default {
       shapePosition = { x: Math.floor(boardWidth / 2) - 2, y: 0 };
       // 初始化第一个方块
       currentShape = randomShape();
+      currentShapeColor = shapeColors[currentShape.type];
       // 生成下一个方块
       nextShape.value = randomShape();
       updateNextShapePreview();
@@ -399,6 +441,7 @@ export default {
 
       // 设置新的当前方块
       currentShape = nextShape.value;
+      currentShapeColor = shapeColors[currentShape.type];
       shapePosition = { x: Math.floor(boardWidth / 2) - 2, y: 0 };
 
       // 生成下一个方块
@@ -619,7 +662,6 @@ html, body {
 }
 
 .filled {
-  background-color: #007bff;
   box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
 }
 
